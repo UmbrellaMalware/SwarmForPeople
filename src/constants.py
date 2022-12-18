@@ -1,0 +1,1 @@
+DEFAULT_START_COMMAND = "python manage.py shell_plus"

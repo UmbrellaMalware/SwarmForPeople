@@ -32,27 +32,35 @@ class DockerClient:
 
     def get_containers_on_node(self, node: Node) -> List[str]:
         node_ip = self.get_node_ip(node)
-        stdout = self.ssh_client.exec_over_jump(
-            node_ip, "ubuntu", GET_CONTAINER_LIST
-        ).decode("utf-8").split("\r\n")
+        stdout = (
+            self.ssh_client.exec_over_jump(node_ip, "ubuntu", GET_CONTAINER_LIST)
+            .decode("utf-8")
+            .split("\r\n")
+        )
         return [json.loads(i) for i in stdout if i]
 
-    def get_container_ids_by_service(self, service: Service) -> list[dict[str, str | Any]]:
+    def get_container_ids_by_service(
+        self, service: Service
+    ) -> list[dict[str, str | Any]]:
         nodes = self.get_nodes_by_service(service)
         container_ids = []
         for node in nodes:
             containers = self.get_containers_on_node(node)
             ids = get_container_ids_from_containers_list(containers, service.name)
             # TODO change to namedtuple
-            container_ids.extend([{'node_ip': self.get_node_ip(node), 'containers': ids}])
+            container_ids.extend(
+                [{"node_ip": self.get_node_ip(node), "containers": ids}]
+            )
         return container_ids
 
-    def interactive_shell_in_container(self, service: Service):
+    def interactive_shell_in_container(self, service: Service, start_command="bash"):
         node = self.get_container_ids_by_service(service)[0]
-        node_ip = node['node_ip']
-        container = node['containers'][0]
+        node_ip = node["node_ip"]
+        container = node["containers"][0]
         conn = self.ssh_client.connect_over_jump(node_ip, "ubuntu")
-        self.ssh_client.start_interactive_shell(conn, f"docker exec -it {container} bash\n")
+        self.ssh_client.start_interactive_shell(
+            conn, f"docker exec -it {container} {start_command}\n"
+        )
 
     @staticmethod
     def get_node_ip(node: Node) -> str:
