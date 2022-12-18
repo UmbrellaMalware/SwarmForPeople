@@ -4,6 +4,8 @@ import tempfile
 import paramiko
 
 from interactive import interactive_shell
+from utils import get_pem_file_name_by_env
+from utils import get_env_from_host
 
 
 class SSHClient:
@@ -19,7 +21,9 @@ class SSHClient:
         self.tmp_pem_file = self.create_temp_pem_file()
 
     def create_temp_pem_file(self):
-        stdin, stdout, stderr = self.client.exec_command("cat .ssh/stage-master.pem")
+        env = get_env_from_host(self.host)
+        pem_file_name = get_pem_file_name_by_env(env)
+        stdin, stdout, stderr = self.client.exec_command(f"cat {pem_file_name}")
         stdout = stdout.read()
         tmp_file = tempfile.NamedTemporaryFile()
         tmp_file.write(stdout)
